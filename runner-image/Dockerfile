@@ -19,9 +19,11 @@ USER root
 # ── step CLI for OIDC JWT verification ────────────────────────────────────────
 # Used in validate-workflow.sh to verify GitHub's JWKS signature.
 # No Azure, no Key Vault — GitHub's public JWKS endpoint is the only dependency.
+RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
+
 RUN STEP_VERSION=0.26.1 && \
     curl -fsSL "https://github.com/smallstep/cli/releases/download/v${STEP_VERSION}/step_linux_${STEP_VERSION}_${TARGETARCH}.tar.gz" \
-    | tar -xz --strip-components=1 -C /usr/local/bin "step_${STEP_VERSION}/bin/step" && \
+    | tar -xz --strip-components=2 -C /usr/local/bin "step_${STEP_VERSION}/bin/step" && \
     step version
 
 # ── Hook and entrypoint ───────────────────────────────────────────────────────
