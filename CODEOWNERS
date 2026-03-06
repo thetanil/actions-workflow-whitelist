@@ -1,0 +1,12 @@
+# CODEOWNERS
+# All files that affect job execution require platform team review.
+# This file includes itself so any modification also requires review.
+
+CODEOWNERS                     @your-org/platform-team
+.github/CODEOWNERS             @your-org/platform-team
+tracked-paths.txt              @your-org/platform-team
+approved-shas.txt              @your-org/platform-team
+approved-file-shas.txt         @your-org/platform-team
+.github/workflows/             @your-org/platform-team
+runner-image/                  @your-org/platform-team
+k8s/                           @your-org/platform-team

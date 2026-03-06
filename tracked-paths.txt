@@ -1,0 +1,17 @@
+# tracked-paths.txt
+#
+# Paths whose blob SHAs are checked by the runner hook in addition to
+# workflow files. Any change to a listed file is blocked at job start
+# until approve-workflow-sha.yml re-runs and commits new SHAs.
+#
+# Rules:
+#   - One path per line (file or directory; directories are walked recursively)
+#   - Lines starting with # are ignored
+#   - Do not list approved-shas.txt or approved-file-shas.txt here (auto-generated)
+#
+# Consumer repos: add your scripts/, .github/actions/, and similar directories.
+
+CODEOWNERS
+tracked-paths.txt
+runner-image/
+k8s/

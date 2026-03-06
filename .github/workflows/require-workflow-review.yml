@@ -1,0 +1,46 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# .github/workflows/require-workflow-review.yml
+#
+# Required status check on PRs touching any file that affects job execution.
+# Blocks merge until a CODEOWNER approves.
+# ─────────────────────────────────────────────────────────────────────────────
+name: Require Workflow Review
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/**"
+      - "runner-image/**"
+      - "tracked-paths.txt"
+      - "CODEOWNERS"
+      - "k8s/**"
+  pull_request_review:
+    types: [submitted, dismissed]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  check-approval:
+    name: Verify CODEOWNER approval
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for required approval
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR="${{ github.event.pull_request.number }}"
+          REPO="${{ github.repository }}"
+
+          APPROVALS=$(gh api "repos/${REPO}/pulls/${PR}/reviews" \
+            --jq '[.[] | select(.state == "APPROVED")] | length')
+
+          echo "Approvals: $APPROVALS"
+
+          if [[ "$APPROVALS" -lt 1 ]]; then
+            echo "Requires at least 1 CODEOWNER approval before merge."
+            exit 1
+          fi
+
+          echo "Approved."

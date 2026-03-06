@@ -1,0 +1,3 @@
+# approved-shas.txt — managed by approve-workflow-sha.yml
+# Do not edit manually. This file is committed by the approval workflow
+# on every merge to main that touches workflows or tracked files.

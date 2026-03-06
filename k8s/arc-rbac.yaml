@@ -1,0 +1,46 @@
+# k8s/arc-rbac.yaml
+#
+# ServiceAccount and RBAC for ARC runner pods.
+# Runners need pod management permissions for kubernetes container mode.
+# No ConfigMap permissions required — SHA lists are fetched from GitHub API.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: arc-runner-sa
+  namespace: arc-runners
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: arc-runner-role
+  namespace: arc-runners
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "create", "delete", "patch", "update"]
+  - apiGroups: [""]
+    resources: ["pods/exec"]
+    verbs: ["create", "get"]
+  - apiGroups: [""]
+    resources: ["pods/log"]
+    verbs: ["get", "list"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list", "create", "delete"]
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims"]
+    verbs: ["get", "list", "create", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: arc-runner-rolebinding
+  namespace: arc-runners
+subjects:
+  - kind: ServiceAccount
+    name: arc-runner-sa
+    namespace: arc-runners
+roleRef:
+  kind: Role
+  apiGroup: rbac.authorization.k8s.io
+  name: arc-runner-role

@@ -1,0 +1,123 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# .github/workflows/approve-workflow-sha.yml
+#
+# Reusable workflow. Triggered by consumer repos (or this platform repo)
+# when a PR touching workflows or tracked files merges to main.
+#
+# Collects git blob SHAs for all workflow files and all paths listed in
+# tracked-paths.txt, then commits the results as approved-shas.txt and
+# approved-file-shas.txt to the calling repo's main branch.
+#
+# The runner hook (validate-workflow.sh) fetches these files from main at
+# job start — no ConfigMap, no kubectl required.
+#
+# Caller must grant:
+#   permissions:
+#     contents: write
+#     id-token: write
+#
+# Branch protection must allow github-actions[bot] to bypass required reviews
+# so the bot can push approved-shas.txt directly to main.
+# ─────────────────────────────────────────────────────────────────────────────
+name: Approve Workflow SHAs
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/**"
+      - "tracked-paths.txt"
+      - "CODEOWNERS"
+      - "runner-image/**"
+      - "k8s/**"
+  workflow_call:
+    # Called from consumer repos. All inputs come from the caller's context.
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Reason for manual approval"
+        required: false
+        default: "Manual approval"
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  approve-shas:
+    name: Collect and commit approved SHAs
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Collect workflow SHAs
+        run: |
+          {
+            echo "# approved-shas.txt — managed by approve-workflow-sha.yml"
+            echo "# Updated: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "# Commit:  ${{ github.sha }}"
+            echo "# Actor:   ${{ github.actor }}"
+            echo ""
+            find .github/workflows -name "*.yml" -o -name "*.yaml" \
+              | sort \
+              | while IFS= read -r file; do
+                  sha=$(git hash-object "$file")
+                  echo "${sha}  # $(basename "$file")"
+                done
+          } > approved-shas.txt
+
+          echo "Workflow SHAs:"
+          grep -vE "^\s*#|^\s*$" approved-shas.txt || true
+
+      - name: Collect tracked file SHAs
+        run: |
+          {
+            echo "# approved-file-shas.txt — managed by approve-workflow-sha.yml"
+            echo "# Updated: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo ""
+            if [[ -f tracked-paths.txt ]]; then
+              while IFS= read -r pattern; do
+                [[ "$pattern" =~ ^#|^[[:space:]]*$ ]] && continue
+                pattern="${pattern%/}"
+                if [[ -e "$pattern" ]]; then
+                  find "$pattern" -type f | sort | while IFS= read -r file; do
+                    sha=$(git hash-object "$file")
+                    echo "${sha}  ${file}"
+                  done
+                fi
+              done < tracked-paths.txt
+            else
+              echo "# tracked-paths.txt not present — no file SHAs tracked"
+            fi
+          } > approved-file-shas.txt
+
+          echo "Tracked file SHAs:"
+          grep -vE "^\s*#|^\s*$" approved-file-shas.txt || true
+
+      - name: Commit approved SHA lists
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add approved-shas.txt approved-file-shas.txt
+          if git diff --staged --quiet; then
+            echo "No changes to approved SHA lists."
+          else
+            git commit -m "ci: update approved SHAs for ${{ github.sha }}"
+            git push
+            echo "Approved SHA lists committed and pushed."
+          fi
+
+      - name: Summary
+        run: |
+          WF_COUNT=$(grep -cvE "^\s*#|^\s*$" approved-shas.txt || true)
+          FILE_COUNT=$(grep -cvE "^\s*#|^\s*$" approved-file-shas.txt || true)
+          echo "## Workflow SHAs Approved" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Commit: \`${{ github.sha }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Actor: ${{ github.actor }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Approved workflow SHAs: ${WF_COUNT}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Approved tracked file SHAs: ${FILE_COUNT}" >> "$GITHUB_STEP_SUMMARY"

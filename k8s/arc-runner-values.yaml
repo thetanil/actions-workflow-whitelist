@@ -1,0 +1,90 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# k8s/arc-runner-values.yaml
+#
+# Helm values for the ARC runner scale set.
+#
+# Install:
+#   helm install arc-runner-set \
+#     --namespace arc-runners \
+#     --create-namespace \
+#     --values k8s/arc-runner-values.yaml \
+#     oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set
+#
+# After building a new runner image, replace the image value below with the
+# digest from the build-images.yml job summary, then run helm upgrade.
+# ─────────────────────────────────────────────────────────────────────────────
+
+githubConfigUrl: "https://github.com/YOUR_ORG/YOUR_REPO"
+githubConfigSecret: arc-github-secret
+minRunners: 1
+maxRunners: 10
+runnerScaleSetName: arc-runner-set
+
+containerMode:
+  type: "kubernetes"
+  kubernetesModeWorkVolumeClaim:
+    accessModes: ["ReadWriteOnce"]
+    storageClassName: "default"
+    resources:
+      requests:
+        storage: 10Gi
+
+template:
+  spec:
+    serviceAccountName: arc-runner-sa
+
+    initContainers:
+      - name: init-dind-externals
+        # Pin to digest after first build. Get digest from build-images.yml summary.
+        image: ghcr.io/YOUR_ORG/arc-runner@sha256:REPLACE_WITH_DIGEST
+        imagePullPolicy: Always
+        command: ["cp", "-r", "-v", "/home/runner/externals/.", "/home/runner/tmpDir/"]
+        volumeMounts:
+          - name: dind-externals
+            mountPath: /home/runner/tmpDir
+
+    containers:
+      - name: runner
+        # Pin to digest after first build. Get digest from build-images.yml summary.
+        image: ghcr.io/YOUR_ORG/arc-runner@sha256:REPLACE_WITH_DIGEST
+        imagePullPolicy: Always
+        command: ["/home/runner/entrypoint.sh"]
+
+        env:
+          - name: ACTIONS_RUNNER_CONTAINER_HOOKS
+            value: /home/runner/k8s/index.js
+          - name: ACTIONS_RUNNER_HOOK_JOB_STARTED
+            value: /etc/arc/hooks/validate-workflow.sh
+          - name: ACTIONS_RUNNER_POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: ACTIONS_RUNNER_REQUIRE_JOB_CONTAINER
+            value: "false"
+
+        volumeMounts:
+          - name: work
+            mountPath: /home/runner/_work
+          - name: dind-externals
+            mountPath: /home/runner/externals
+
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "512Mi"
+          limits:
+            cpu: "2"
+            memory: "2Gi"
+
+    volumes:
+      - name: work
+        ephemeral:
+          volumeClaimTemplate:
+            spec:
+              accessModes: ["ReadWriteOnce"]
+              storageClassName: "default"
+              resources:
+                requests:
+                  storage: 10Gi
+      - name: dind-externals
+        emptyDir: {}
