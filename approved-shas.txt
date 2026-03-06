@@ -1,3 +1,8 @@
 # approved-shas.txt — managed by approve-workflow-sha.yml
-# Do not edit manually. This file is committed by the approval workflow
-# on every merge to main that touches workflows or tracked files.
+# Updated: 2026-03-06T00:34:16Z
+# Commit:  41bea384c4e9933a0eb54faeb53e6839686c0fe7
+# Actor:   thetanil
+
+a69d1c78bf944753ee9b8cdeeeeacaffe728f17e  # approve-workflow-sha.yml
+c1bd1a105187d12b561ec57d368f66b1340afb0f  # build-images.yml
+4d1a9ef969584f10f82fd6104d40e01c9d2fbf17  # require-workflow-review.yml
