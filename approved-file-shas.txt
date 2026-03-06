@@ -1,9 +1,9 @@
 # approved-file-shas.txt — managed by approve-workflow-sha.yml
-# Updated: 2026-03-06T00:43:07Z
+# Updated: 2026-03-06T00:46:52Z
 
 3f27acf9aa16290331005dbe3d0cecf168dcbf4b  CODEOWNERS
 a2a502089c6135adb611a06209185ea18598546f  tracked-paths.txt
-bad9a7e09026315855fcd5fab0b3c5d64d2652ab  runner-image/Dockerfile
+c762648fbbd24c0ebf0b5df09130572b8dd1db89  runner-image/Dockerfile
 16fbe4f226d76868accad4a995558d74395e46bc  runner-image/entrypoint.sh
 8c43e7177bcadbd978874520a02acb2a52d9c246  runner-image/hooks/validate-workflow.sh
 ffb23a4331b8f3458c37c470f2c17cbddcd7b03f  k8s/arc-rbac.yaml
