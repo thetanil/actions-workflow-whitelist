@@ -20,7 +20,7 @@ USER root
 # Used in validate-workflow.sh to verify GitHub's JWKS signature.
 # No Azure, no Key Vault — GitHub's public JWKS endpoint is the only dependency.
 RUN STEP_VERSION=0.26.1 && \
-    curl -fsSL "https://github.com/smallstep/cli/releases/download/v${STEP_VERSION}/step_linux_${STEP_VERSION}_${TARGETARCH}.tar.gz" \
+    wget -qO- "https://github.com/smallstep/cli/releases/download/v${STEP_VERSION}/step_linux_${STEP_VERSION}_${TARGETARCH}.tar.gz" \
     | tar -xz --strip-components=1 -C /usr/local/bin "step_${STEP_VERSION}/bin/step" && \
     step version
 
